@@ -1,6 +1,7 @@
 const Sauce = require('../models/Sauce');
 
 const fs = require('fs');//fs = 'file system'
+const { default: mongoose } = require('mongoose');
 
 //Création de sauce
 exports.createSauce = (req, res, next) => {
@@ -10,7 +11,7 @@ exports.createSauce = (req, res, next) => {
 
     const sauce = new Sauce({
         //...reqBody,   //protocol=http         //host = localhost:3000   //nom du fichier
-        //imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`//finalement ces deux lignes suffisent pour créer un nouveau produit !
+        //imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,//finalement ces deux lignes suffisent pour créer un nouveau produit !
         userId: reqBody.userId,
         name: reqBody.name,
         manufacturer: reqBody.manufacturer,
@@ -80,33 +81,106 @@ exports.getAllSauces = (req, res, next) => {
         .catch(res.status(400));
 };
 
+//REPRENDRE AVEC LE TUTO DU GARS
+
 //Fonction like/dislike
 exports.likeSauce = (req, res, next) => {
-    //essayer d'afficher le tableau du produit avec toutes ses entrées : par exemple console.log req.body
 
-    const userId = req.body.userId
-    const like = req.body.like
+    Sauce.findOne({ _id: req.params.id })
+        .then((sauce) => {
+            console.log("contenu resultat promesse", sauce);
 
-    if (like === 1) {
-       /* Sauce.likes = like,
-        Sauce.usersLiked = userId */
-        console.log("testReqParams", req.params.id);
-        let oneSauce = Sauce.findOne({ _id: req.params.id })
-        .then(sauce => res.status(200).json(sauce))
-        .catch(res.status(404));
+            //si le tableau userLiked ne contient pas le userId du votant ET si le like n'est pas égal à 1
+            if (!sauce.usersLiked.includes(req.body.userId) && req.body.like === 1) {
+                console.log("like", req.body.like);//Attention, il faut mettre "like" et non "likes" !
 
-        console.log('oneSauce', oneSauce);
-       /* Sauce.getOne(
-            { _id: req.params.id }, //récupère l'Id du produit
-            {name: "nouevelle sauce"}
-            //{ $push: { usersLiked: userId } },//rajoute un élément dans le tableau "usersLiked"
-            //{ $inc: { likes: +1 } },//incrémente la valeur de like
+                //mise à jour de l'objet de la base de données
+                Sauce.updateOne(
+                    { _id: req.params.id },
+                    {
+                        $inc: { likes: 1 },
+                        $push: { usersLiked: req.body.userId }
+                    }
+                )
+                    .then(() => res.status(201).json({ message: "Like + 1 !" }))
+                    .catch((error) => res.status(400).json({ error }));
+            };
+
+            //si like === 0, donc pas de vote ou vote annulé
+            //si le tableau userLiked contient l'userId du votant ET si like est égal à 0
+            if (sauce.usersLiked.includes(req.body.userId) && req.body.like === 0) {
+                console.log("like", req.body.like);//Attention, il faut mettre "like" et non "likes" !
+
+                //Annulation du like et suppression de l'userId dans le tableau (base de données)
+                Sauce.updateOne(
+                    { _id: req.params.id },
+                    {
+                        $inc: { likes: -1 },
+                        $pull: { usersLiked: req.body.userId }
+                    }
+                )
+                    .then(() => res.status(201).json({ message: "Like = 0 !" }))
+                    .catch((error) => res.status(400).json({ error }));
+            };
+
+            if (!sauce.usersDisliked.includes(req.body.userId) && req.body.like === -1) {
+                console.log("like", req.body.like);//Attention, il faut mettre "like" et non "likes" !
+
+                //mise à jour de l'objet de la base de données
+                Sauce.updateOne(
+                    { _id: req.params.id },
+                    {
+                        $inc: { dislikes: 1 },
+                        $push: { usersDisliked: req.body.userId }
+                    }
+                )
+                    .then(() => res.status(201).json({ message: "Dislike + 1 !" }))
+                    .catch((error) => res.status(400).json({ error }));
+            };
+
+            if (sauce.usersDisliked.includes(req.body.userId) && req.body.like === 0) {
+                console.log("dislike", req.body.like);//Attention, il faut mettre "like" et non "likes" !
+
+                //Annulation du like et suppression de l'userId dans le tableau (base de données)
+                Sauce.updateOne(
+                    { _id: req.params.id },
+                    {
+                        $inc: { dislikes: -1 },
+                        $pull: { usersDisliked: req.body.userId }
+                    }
+                )
+                    .then(() => res.status(201).json({ message: "Like = 0 !" }))
+                    .catch((error) => res.status(400).json({ error }));
+            };
 
 
-        )
-            .then(() => res.status(200).json({ message: 'Vote enregistré !' }))
-            .catch(res.status(400));*/
-    }
+        })
+        .catch(res.status(404))
+
+    //if (updateLike === 1) {
+
+
+
+
+    /* Sauce.likes = like,
+    Sauce.usersLiked = userId */
+    /*console.log("testReqParams", req.params.id);
+    let oneSauce = Sauce.findOne({ _id: req.params.id })
+    .then(sauce => res.status(200).json(sauce))
+    .catch(res.status(404));
+
+    console.log('oneSauce', oneSauce);*/
+    /* Sauce.getOne(
+         { _id: req.params.id }, //récupère l'Id du produit
+         {name: "nouevelle sauce"}
+         //{ $push: { usersLiked: userId } },//rajoute un élément dans le tableau "usersLiked"
+         //{ $inc: { likes: +1 } },//incrémente la valeur de like
+ 
+ 
+     )
+         .then(() => res.status(200).json({ message: 'Vote enregistré !' }))
+         .catch(res.status(400));*/
+    // }
 
     //console.log("likeAttrappé", this.createSauce.likes);
 
