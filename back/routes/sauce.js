@@ -6,12 +6,14 @@ const auth = require('../middleware/auth');
 //Création d'un nouveau produit
 //router.post('/', multerConfig, sauceCtrl.createSauce);
 
-router.post('/', auth, multerConfig, (req, res) => {
+/*router.post('/', auth, multerConfig, (req, res) => {
     //console.log("name", req.body.name);
     sauceCtrl.createSauce(req, res);
-});
+});*/
 
-//Mise à jour d'un produit
+router.post('/', auth, multerConfig, sauceCtrl.createSauce);
+
+//Mise à jour d'un produit 
 router.put('/:id', multerConfig, sauceCtrl.updateSauce);//le middleware auth continue de tout bloquer lors de l'update...
 
 //Supprimer un produit
@@ -24,6 +26,6 @@ router.get('/:id', auth, sauceCtrl.getOneSauce);
 router.get('/', auth, sauceCtrl.getAllSauces);
 
 //fonction like/dislike
-router.post('/:id/like', multerConfig, sauceCtrl.likeSauce);
+router.post('/:id/like', sauceCtrl.likeSauce);
 
 module.exports = router;
